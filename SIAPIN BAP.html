@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kearsipan & Administrasi BAP Pemasyarakatan Pro (Online Cloud)</title>
+
+    <!-- FIREBASE SDK (CDN STANDALONE) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+        }
+
+        /* HALAMAN LOGIN */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .login-box {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .login-box h2 {
+            margin-top: 0;
+            color: #0f172a;
+            font-size: 20px;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 10px;
+        }
+        .login-box .form-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .login-error {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Status Badge Online Cloud */
+        .cloud-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background-color: #10b981;
+            color: #fff;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+
+        /* Navigation & Header */
+        .app-header {
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .app-header h1 {
+            margin: 0;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .tab-btn {
+            background-color: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover, .tab-btn.active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 25px auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h2, h3 {
+            color: #0f172a;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 6px;
+            margin-top: 25px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+        }
+        textarea {
+            resize: vertical;
+            height: 70px;
+        }
+        
+        .btn {
+            background-color: #1d4ed8;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { background-color: #1e40af; }
+        .btn-danger { background-color: #ef4444; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-secondary { background-color: #64748b; }
+        .btn-secondary:hover { background-color: #475569; }
+        .btn-success { background-color: #15803d; }
+        .btn-success:hover { background-color: #166534; }
+        .btn-word { background-color: #2b579a; }
+        .btn-word:hover { background-color: #1e3e6d; }
+
+        .dynamic-item {
+            background: #f8fafc;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .dynamic-item .btn-danger {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+
+        /* Tabel Arsip Data */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-bar input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+        }
+        .archive-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .archive-table th, .archive-table td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 13px;
+        }
+        .archive-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+        .archive-table tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* FORMAT CETAK DOKUMEN RESMI BAP */
+        #bap-preview {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            color: #000;
+            line-height: 1.35;
+            font-size: 11pt;
+        }
+
+        .kop-surat-wrapper {
+            display: flex;
+            align-items: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 6px;
+            margin-bottom: 15px;
+        }
+        .kop-logo {
+            width: 80px;
+            height: 80px;
+            margin-right: 15px;
+            object-fit: contain;
+        }
+        .kop-text {
+            flex: 1;
+            text-align: center;
+        }
+        .kop-text h4 { margin: 0; font-size: 10.5pt; font-weight: bold; text-transform: uppercase; }
+        .kop-text h3 { margin: 0; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; border: none; padding: 0; color: #000; }
+        .kop-text p { margin: 2px 0 0 0; font-size: 9.5pt; font-style: italic; }
+
+        .doc-title {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .doc-title h3 {
+            margin: 0;
+            font-size: 12pt;
+            font-weight: bold;
+            text-decoration: underline;
+            border: none;
+            padding: 0;
+            color: #000;
+        }
+        .doc-title p { margin: 2px 0 0 0; font-size: 11pt; }
+
+        .table-doc {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 11pt;
+        }
+        .table-doc td {
+            vertical-align: top;
+            padding: 2px 4px;
+        }
+        
+        .table-qa {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 11pt;
+        }
+        .table-qa th, .table-qa td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            vertical-align: top;
+        }
+        .table-qa th {
+            text-align: center;
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+
+        .resume-box {
+            margin-top: 10px;
+        }
+        .resume-title {
+            text-align: center;
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 12px;
+        }
+
+        .sig-table {
+            width: 100%;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 11pt;
+        }
+        .sig-table td {
+            vertical-align: top;
+            padding: 5px;
+        }
+        .sig-space {
+            height: 50px;
+        }
+
+        .img-preview-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .img-preview-container img {
+            max-width: 320px;
+            max-height: 400px;
+            border: 1px solid #000;
+            object-fit: cover;
+        }
+
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+            margin-top: 30px;
+            border-top: 2px dashed #cbd5e1;
+            padding-top: 20px;
+        }
+
+        @page {
+            size: 215mm 330mm;
+            margin-top: 1.5cm;
+            margin-left: 2.5cm;
+            margin-right: 2.5cm;
+            margin-bottom: 2.7cm;
+        }
+
+        @media print {
+            body { 
+                background: #fff; 
+                padding: 0; 
+                margin: 0; 
+                font-family: Arial, sans-serif;
+                font-size: 11pt;
+                -webkit-print-color-adjust: exact;
+            }
+            .no-print, .app-header { display: none !important; }
+            #bap-preview { display: block !important; padding: 0; margin: 0; }
+            .page-break { 
+                page-break-before: always !important; 
+                break-before: page !important;
+                border-top: none !important;
+                padding-top: 0 !important;
+                margin-top: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- MODAL LOGIN -->
+<div id="login-overlay">
+    <div class="login-box">
+        <h2>LOGIN SISTEM BAP</h2>
+        <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUser" placeholder="Masukkan username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPass" placeholder="Masukkan password" required>
+            </div>
+            <div id="loginError" class="login-error">Username atau password salah!</div>
+            <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center; margin-top: 10px; padding: 10px;">Masuk Aplikasi</button>
+        </form>
+    </div>
+</div>
+
+<div class="app-header no-print">
+    <h1>Sistem BAP Pemasyarakatan Pro <span class="cloud-badge">Cloud Online Multi-Device</span></h1>
+    <div class="nav-tabs">
+        <button class="tab-btn active" id="btn-tab-form" onclick="switchTab('form')">Formulir BAP</button>
+        <button class="tab-btn" id="btn-tab-archive" onclick="switchTab('archive')">Arsip Data BAP (<span id="archive-count">0</span>)</button>
+        <button class="tab-btn btn-danger" onclick="handleLogout()" style="margin-left: 10px;">Logout</button>
+    </div>
+</div>
+
+<!-- SECTION FORMULIR BAP -->
+<div class="container no-print" id="form-section">
+    <h2 style="text-align: center; margin-top:0;" id="form-title">FORMULIR INPUT BAP PEMASYARAKATAN</h2>
+    
+    <form id="bapForm">
+        <input type="hidden" id="bapId" value="">
+
+        <h3>I. KOP & SURAT PERINTAH</h3>
+        <div class="form-group">
+            <label>Unggah Custom Logo Kop (Opsional)</label>
+            <input type="file" id="customLogoInput" accept="image/*" onchange="loadCustomLogo(event)">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Kanwil Kemenimipas / Kemenkumham</label>
+                <input type="text" id="kanwil" value="KANTOR WILAYAH SULAWESI SELATAN" required>
+            </div>
+            <div class="form-group">
+                <label>Nama Satker Lapas/Rutan</label>
+                <input type="text" id="satker" value="LEMBAGA PEMASYARAKATAN NARKOTIKA SUNGGUMINASA" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Alamat & Kontak Satker</label>
+                <input type="text" id="alamatSatker" value="Jalan Lembaga Bollangi, Kab. Gowa, Sulawesi Selatan | Pos-el : lapastika.sungguminasa@gmail.com" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nomor BAP</label>
+                <input type="text" id="noBap" value="WP.23.PAS.6.PK.08.03 -       /2026" required>
+            </div>
+            <div class="form-group">
+                <label>Jabatan Pemberi Perintah</label>
+                <input type="text" id="pemberiPerintah" value="Kepala Lembaga Pemasyarakatan Narkotika Sungguminasa" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Hari & Tanggal Pemeriksaan</label>
+                <input type="text" id="hariTanggal" placeholder="Contoh: Senin, 30 MEI 2026" required>
+            </div>
+            <div class="form-group">
+                <label>Jam Pemeriksaan</label>
+                <input type="text" id="jam" value="09.00 Wita" required>
+            </div>
+            <div class="form-group">
+                <label>Kota / Lokasi Dokumen</label>
+                <input type="text" id="kota" value="Sungguminasa" required>
+            </div>
+        </div>
+
+        <h3>II. TIM PEMERIKSA</h3>
+        <div id="pemeriksa-container"></div>
+        <button type="button" class="btn btn-secondary" onclick="addPemeriksa()">+ Tambah Pemeriksa</button>
+
+        <h3>III. IDENTITAS TERPERIKSA (WBP)</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nama WBP / Narapidana</label>
+                <input type="text" id="wbpNama" value="ARDIANSYAH ALS ADI BIN BAKRI" required>
+            </div>
+            <div class="form-group">
+                <label>No. Register</label>
+                <input type="text" id="wbpReg" value="BI. 02/2024" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Putusan / Ekspirasi</label>
+                <input type="text" id="wbpPutusan" value="5 THN" required>
+            </div>
+            <div class="form-group">
+                <label>Perkara / Pasal</label>
+                <input type="text" id="wbpPerkara" value="UU RI NO.35 THN 2009" required>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Ekspirasi</label>
+                <input type="text" id="wbpEkspirasi" value="03/01/2029" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Dugaan Pelanggaran Tata Tertib</label>
+            <input type="text" id="dugaanPelanggaran" value="dugaan pelanggaran tata tertib kepemilikan Handphone dan penipuan di dalam Lapas Narkotika Sungguminasa" required>
+        </div>
+
+        <h3>IV. DAFTAR PERTANYAAN & JAWABAN</h3>
+        <div id="qa-container"></div>
+        <button type="button" class="btn btn-secondary" onclick="addQA()">+ Tambah Pertanyaan</button>
+
+        <h3>V. KESIMPULAN (RESUME) & REKOMENDASI</h3>
+        <div class="form-group">
+            <label>Poin-Poin Kesimpulan (Satu per baris)</label>
+            <textarea id="resumePoints" style="height: 90px;">Benar sdr ARDIANSYAH ALS ADI BIN BAKRI adalah seorang Warga binaan Pemasyarakatan Lapas Narkotika Sungguminasa.
+Benar pada hari Senin, 30 Maret 2026 Pukul 09.00 Wita sdr. ARDIANSYAH ALS ADI BIN BAKRI diperiksa dan terbukti menggunakan Handphone di dalam Lapas Narkotika Sungguminasa dan tidak terbukti dalam kasus penipuan tersebut .
+Benar untuk tindakan pembinaan yang bersangkutan langsung diamankan di dalam ruangan isolasi (Sel) sambil menunggu proses selanjutnya.</textarea>
+        </div>
+        <div class="form-group">
+            <label>Dasar Aturan / Permenkumham</label>
+            <input type="text" id="dasarAturan" value="Permenkumham No. 8 Tahun 2024 pasal 26 huruf (i) yang berbunyi  : “memiliki, membawa, atau menggunakan alat komunikasi atau alat elektronik.”">
+        </div>
+        <div class="form-group">
+            <label>Rekomendasi Hukuman Disiplin (Satu per baris)</label>
+            <textarea id="rekomendasiPoints" style="height: 80px;">Dimasukan ke Straf Cell dan dicatat dalam register H
+Menunda pemberian hak-hak warga binaan yang bersangkutan seperti : Remisi, CMB, PB, CB dan Dikunjungi oleh keluarga. ( Register F )</textarea>
+        </div>
+
+        <h3>VI. PEJABAT PENANDATANGAN</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Kepala Lapas / Rutan</label>
+                <input type="text" id="kalapasNama" value="Gunawan" required>
+            </div>
+            <div class="form-group">
+                <label>Kasi Adm Kamtib</label>
+                <input type="text" id="kasiKamtibNama" value="Sudirman Azis" required>
+            </div>
+        </div>
+
+        <h3>VII. DOKUMENTASI FOTO (OPSIONAL)</h3>
+        <div class="form-group">
+            <label>Unggah Foto Dokumentasi Pemeriksaan</label>
+            <input type="file" id="fotoInput" accept="image/*" multiple onchange="previewImages(event)">
+        </div>
+
+        <div style="margin-top: 30px; text-align: center; display: flex; justify-content: center; gap: 15px;">
+            <button type="button" class="btn btn-secondary" onclick="resetForm()">Batal / Reset Form</button>
+            <button type="button" class="btn btn-success" style="font-size: 15px; padding: 10px 24px;" onclick="saveAndPreviewBAP()">Simpan ke Cloud & Pratinjau</button>
+        </div>
+    </form>
+</div>
+
+<!-- SECTION ARSIP DATA BAP -->
+<div class="container no-print" id="archive-section" style="display: none;">
+    <h2 style="margin-top: 0;">ARSIP DATA BERITA ACARA PEMERIKSAAN (ONLINE CLOUD)</h2>
+    
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Cari berdasarkan Nama WBP, No. Register, atau Nomor BAP..." onkeyup="renderArchiveTable()">
+        <button class="btn btn-secondary" onclick="exportDataJSON()">Backup JSON</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Restore JSON</button>
+        <button class="btn btn-danger" onclick="resetDatabase()">Reset Semua Arsip Cloud</button>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
+    </div>
+
+    <table class="archive-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 25%;">Nama WBP & Register</th>
+                <th style="width: 25%;">Nomor BAP & Tanggal</th>
+                <th style="width: 25%;">Dugaan Pelanggaran</th>
+                <th style="width: 20%; text-align: center;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="archiveTbody"></tbody>
+    </table>
+</div>
+
+<!-- TAMPILAN PRATINJAU DOKUMEN RESMI BAP -->
+<div id="bap-preview">
+    <div class="no-print" style="margin-bottom: 20px; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary" onclick="backToEdit()">← Edit Kembali</button>
+        <button class="btn btn-word" onclick="exportToWord()">Unduh File Word (.docx)</button>
+        <button class="btn btn-success" onclick="window.print()">Cetak / Simpan PDF</button>
+    </div>
+
+    <div id="bap-doc-content">
+        <!-- HALAMAN 1 -->
+        <div class="page-1">
+            <div class="kop-surat-wrapper">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png/800px-Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png" class="kop-logo out-logo" alt="Logo Kemenimipas">
+                <div class="kop-text">
+                    <h4>KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h4>
+                    <h4>DIREKTORAT JENDERAL PEMASYARAKATAN</h4>
+                    <h3 class="out-kanwil">KANTOR WILAYAH SULAWESI SELATAN</h3>
+                    <h3 class="out-satker">LEMBAGA PEMASYARAKATAN NARKOTIKA SUNGGUMINASA</h3>
+                    <p class="out-alamatSatker">Jalan Lembaga Bollangi, Kab. Gowa, Sulawesi Selatan | Pos-el : lapastika.sungguminasa@gmail.com</p>
+                </div>
+            </div>
+
+            <div class="doc-title">
+                <h3>BERITA ACARA PEMERIKSAAN (BAP)</h3>
+                <p>Nomor : <span id="out-noBap"></span></p>
+            </div>
+
+            <p style="text-align: justify;">Pada hari <span id="out-hariTanggal"></span> Jam <span id="out-jam"></span>, menindak lanjuti perintah <span id="out-pemberiPerintah"></span>, kami masing-masing:</p>
+
+            <div id="out-pemeriksa-list"></div>
+
+            <p>Melakukan pemeriksaan seorang Narapidana <span id="out-satker-text"></span> yaitu :</p>
+
+            <table class="table-doc">
+                <tr><td style="width: 20%;">NAMA</td><td style="width: 3%;">:</td><td><b id="out-wbpNama"></b></td></tr>
+                <tr><td>No. REG</td><td>:</td><td><span id="out-wbpReg"></span></td></tr>
+                <tr><td>PUTUSAN</td><td>:</td><td><span id="out-wbpPutusan"></span></td></tr>
+                <tr><td>PERKARA</td><td>:</td><td><span id="out-wbpPerkara"></span></td></tr>
+                <tr><td>EKSPIRASI</td><td>:</td><td><span id="out-wbpEkspirasi"></span></td></tr>
+            </table>
+
+            <p style="text-align: justify;">Terkait <span id="out-dugaanPelanggaran"></span>:</p>
+            <p>Berikut hasil pemeriksaan Narapidana tersebut:</p>
+
+            <table class="table-qa">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">NO.</th>
+                        <th style="width: 46%;">PERTANYAAN</th>
+                        <th style="width: 46%;">JAWABAN</th>
+                    </tr>
+                </thead>
+                <tbody id="out-qa-tbody"></tbody>
+            </table>
+
+            <p style="text-align: justify; margin-top: 15px;">Demikian Berita Acara Pemeriksaan ini di buat, kemudian dibacakan kembali kepada terperiksa, yang diperiksa menyatakan setuju pada semua keterangan yang tertulis tersebut diatas.</p>
+
+            <p style="text-align: right; margin-top: 15px;"><span id="out-kota"></span>, <span id="out-tanggalOnly"></span></p>
+
+            <div style="text-align: center; margin-top: 10px;">
+                <p>Yang Diperiksa,</p>
+                <div class="sig-space"></div>
+                <p><b id="out-sig-wbp"></b></p>
+            </div>
+        </div>
+
+        <!-- HALAMAN 2 -->
+        <div class="page-break"></div>
+
+        <div class="page-2">
+            <div class="kop-surat-wrapper">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png/800px-Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png" class="kop-logo out-logo" alt="Logo Kemenimipas">
+                <div class="kop-text">
+                    <h4>KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h4>
+                    <h4>DIREKTORAT JENDERAL PEMASYARAKATAN</h4>
+                    <h3 class="out-kanwil">KANTOR WILAYAH SULAWESI SELATAN</h3>
+                    <h3 class="out-satker">LEMBAGA PEMASYARAKATAN NARKOTIKA SUNGGUMINASA</h3>
+                    <p class="out-alamatSatker">Jalan Lembaga Bollangi, Kab. Gowa, Sulawesi Selatan | Pos-el : lapastika.sungguminasa@gmail.com</p>
+                </div>
+            </div>
+
+            <div class="resume-box">
+                <div class="resume-title">KESIMPULAN (RESUME) & REKOMENDASI</div>
+                <p style="text-align: justify;">Berdasarkan hasil BAP Narapidana <b id="out-resume-wbp"></b> telah melakukan pelanggaran terkait <span id="out-resume-pelanggaran"></span>.</p>
+                <p>Berikut kesimpulan dari Berita Acara Pemeriksaan (BAP):</p>
+                
+                <ol id="out-resume-ol" style="text-align: justify; padding-left: 20px; margin-bottom: 8px;"></ol>
+
+                <p style="text-align: justify; margin-top: 4px; margin-bottom: 4px;">Demikian kesimpulan (Resume) hasil pemeriksaan warga binaan atas nama <b id="out-resume-wbp2"></b> yang telah melakukan pelanggaran Keamanan dan Ketertiban sesuai <span id="out-dasarAturan"></span>.</p>
+
+                <p style="text-align: justify; margin-top: 4px; margin-bottom: 4px;">Tim dengan mempertimbangkan hasil BAP serta faktor-faktor yang memberatkan dan meringankan, maka Tim dengan ini merekomendasikan kepada Ka.Lapas/Rutan, beberapa hal sebagai berikut :</p>
+                
+                <p style="margin-top: 4px; margin-bottom: 4px;">Kepada sdr. <b id="out-resume-wbp3"></b>, agar dapat diberikan hukuman yang sesuai dengan aturan yang berlaku berupa :</p>
+                <ol id="out-rekomendasi-ol" style="text-align: justify; padding-left: 20px; margin-bottom: 8px;"></ol>
+            </div>
+        </div>
+
+        <!-- HALAMAN 3 -->
+        <div class="page-break"></div>
+
+        <div class="page-3">
+            <div class="kop-surat-wrapper">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png/800px-Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png" class="kop-logo out-logo" alt="Logo Kemenimipas">
+                <div class="kop-text">
+                    <h4>KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h4>
+                    <h4>DIREKTORAT JENDERAL PEMASYARAKATAN</h4>
+                    <h3 class="out-kanwil">KANTOR WILAYAH SULAWESI SELATAN</h3>
+                    <h3 class="out-satker">LEMBAGA PEMASYARAKATAN NARKOTIKA SUNGGUMINASA</h3>
+                    <p class="out-alamatSatker">Jalan Lembaga Bollangi, Kab. Gowa, Sulawesi Selatan | Pos-el : lapastika.sungguminasa@gmail.com</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <b style="display: block; text-align: center; font-size: 11pt; text-decoration: underline; margin-bottom: 8px;">TIM PEMERIKSA</b>
+                
+                <p style="text-align: justify; margin-top: 10px; margin-bottom: 15px; font-style: italic;">
+                    demikian berita acara ini di buat dengan sebenar - benarnya mengingat sumpah jabatan , kemudian di tutup dan di tanda tangani oleh tim pemeriksa
+                </p>
+
+                <table class="sig-table" id="out-pemeriksa-sig-table" style="margin-top: 5px;"></table>
+            </div>
+
+            <table class="sig-table" style="margin-top: 20px;">
+                <tr>
+                    <td style="width: 50%;">
+                        Mengetahui,<br>
+                        <b>K E P A L A</b>
+                        <div class="sig-space"></div>
+                        <b id="out-sig-kalapas"></b>
+                    </td>
+                    <td style="width: 50%;">
+                        <br>
+                        <b>KASI ADM KAMTIB</b>
+                        <div class="sig-space"></div>
+                        <b id="out-sig-kasiKamtib"></b>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="margin-top: 25px;">
+                <b>KEPUTUSAN/KESIMPULAN KEPALA LEMBAGA PEMASYARAKATAN</b>
+                <table class="table-qa" style="margin-top: 8px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">NO</th>
+                            <th>CATATAN / PETUNJUK KEPUTUSAN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="height: 180px; text-align: center; vertical-align: top; padding-top: 10px;">1.</td>
+                            <td style="height: 180px;"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- HALAMAN 4 -->
+        <div class="page-break"></div>
+
+        <div class="page-4">
+            <div class="kop-surat-wrapper">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png/800px-Logo_Kementerian_Imigrasi_dan_Pemasyarakatan.png" class="kop-logo out-logo" alt="Logo Kemenimipas">
+                <div class="kop-text">
+                    <h4>KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h4>
+                    <h4>DIREKTORAT JENDERAL PEMASYARAKATAN</h4>
+                    <h3 class="out-kanwil">KANTOR WILAYAH SULAWESI SELATAN</h3>
+                    <h3 class="out-satker">LEMBAGA PEMASYARAKATAN NARKOTIKA SUNGGUMINASA</h3>
+                    <p class="out-alamatSatker">Jalan Lembaga Bollangi, Kab. Gowa, Sulawesi Selatan | Pos-el : lapastika.sungguminasa@gmail.com</p>
+                </div>
+            </div>
+
+            <div id="documentation-section" style="margin-top: 15px;">
+                <b style="display: block; text-align: center; font-size: 12pt; text-decoration: underline; margin-bottom: 15px;">DOKUMENTASI PEMERIKSAAN</b>
+                <div class="img-preview-container" id="out-img-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. FIREBASE CONFIGURATION (GANTI DENGAN KODE ANDA)
+    // ==========================================
+    const firebaseConfig = {
+  apiKey: "AIzaSyD54cxQC281Ad6jQhv2mYsTzAOnyRFCI7Q",
+  authDomain: "bap-pemasyarakatan.firebaseapp.com",
+  databaseURL: "https://bap-pemasyarakatan-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "bap-pemasyarakatan",
+  storageBucket: "bap-pemasyarakatan.firebasestorage.app",
+  messagingSenderId: "616757072481",
+  appId: "1:616757072481:web:164c5606bb2a1f86d09020",
+  measurementId: "G-PLR8WEQ3DN"
+};
+
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const bapRef = database.ref('bap_records');
+
+    // KREDENSIAL LOGIN
+    const DEFAULT_USER = "admin";
+    const DEFAULT_PASS = "admin123";
+
+    let uploadedImages = [];
+    let customLogoBase64 = null;
+    let globalBapArray = []; // Menyimpan cache data dari Cloud
+
+    const initialPemeriksa = [
+        { nama: "CHAIDIR ARSYADI", nip: "199604112022011001", pangkat: "Penata Muda Tk.I (III/b)", jabatan: "Kasubsi Peltatib" },
+        { nama: "Rahmat Busrah", nip: "199808152017121002", pangkat: "Penata Muda (III/a)", jabatan: "Staf Kamtib" }
+    ];
+
+    const initialQA = [
+        { q: "Apakah Saudara Sehat ?", a: "Alhamdulillah sehat." }
+    ];
+
+    // SINKRONISASI REALTIME DARI CLOUD DATABASE
+    function listenToCloudData() {
+        bapRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            globalBapArray = data ? Object.values(data) : [];
+            document.getElementById('archive-count').innerText = globalBapArray.length;
+            renderArchiveTable();
+        });
+    }
+
+    // FUNGSI PENYESUAIAN NOMOR URUT DINAMIS
+    function updateQANumbers() {
+        const items = document.querySelectorAll('#qa-container .dynamic-item');
+        items.forEach((item, index) => {
+            const labelQ = item.querySelector('.qa-label-q');
+            const labelA = item.querySelector('.qa-label-a');
+            if (labelQ) labelQ.innerText = `Pertanyaan #${index + 1}`;
+            if (labelA) labelA.innerText = `Jawaban #${index + 1}`;
+        });
+    }
+
+    function updatePemeriksaNumbers() {
+        const items = document.querySelectorAll('#pemeriksa-container .dynamic-item');
+        items.forEach((item, index) => {
+            const label = item.querySelector('.pem-label');
+            if (label) label.innerText = `Nama Pemeriksa #${index + 1}`;
+        });
+    }
+
+    // FUNGSI KELOLA LOGIN
+    function checkLoginStatus() {
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        if (isLoggedIn === 'true') {
+            document.getElementById('login-overlay').style.display = 'none';
+        } else {
+            document.getElementById('login-overlay').style.display = 'flex';
+        }
+    }
+
+    function handleLogin(event) {
+        event.preventDefault();
+        const user = document.getElementById('loginUser').value;
+        const pass = document.getElementById('loginPass').value;
+
+        if (user === DEFAULT_USER && pass === DEFAULT_PASS) {
+            sessionStorage.setItem('isLoggedIn', 'true');
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    }
+
+    function handleLogout() {
+        if (confirm('Apakah Anda yakin ingin logout dari aplikasi?')) {
+            sessionStorage.removeItem('isLoggedIn');
+            checkLoginStatus();
+        }
+    }
+
+    function switchTab(tab) {
+        document.getElementById('form-section').style.display = tab === 'form' ? 'block' : 'none';
+        document.getElementById('archive-section').style.display = tab === 'archive' ? 'block' : 'none';
+        document.getElementById('bap-preview').style.display = 'none';
+
+        document.getElementById('btn-tab-form').classList.toggle('active', tab === 'form');
+        document.getElementById('btn-tab-archive').classList.toggle('active', tab === 'archive');
+
+        if (tab === 'archive') renderArchiveTable();
+    }
+
+    function loadCustomLogo(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customLogoBase64 = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function addPemeriksa(data = { nama: '', nip: '', pangkat: '', jabatan: '' }) {
+        const container = document.getElementById('pemeriksa-container');
+        const div = document.createElement('div');
+        div.className = 'dynamic-item';
+        div.innerHTML = `
+            <button type="button" class="btn btn-danger" onclick="removePemeriksaItem(this)">Hapus</button>
+            <div class="form-row">
+                <div class="form-group"><label class="pem-label">Nama Pemeriksa</label><input type="text" class="pem-nama" value="${data.nama}" required></div>
+                <div class="form-group"><label>NIP</label><input type="text" class="pem-nip" value="${data.nip}" required></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Pangkat / Golongan</label><input type="text" class="pem-pangkat" value="${data.pangkat}" required></div>
+                <div class="form-group"><label>Jabatan</label><input type="text" class="pem-jabatan" value="${data.jabatan}" required></div>
+            </div>
+        `;
+        container.appendChild(div);
+        updatePemeriksaNumbers();
+    }
+
+    function removePemeriksaItem(btn) {
+        btn.closest('.dynamic-item').remove();
+        updatePemeriksaNumbers();
+    }
+
+    function addQA(data = { q: '', a: '' }) {
+        const container = document.getElementById('qa-container');
+        const div = document.createElement('div');
+        div.className = 'dynamic-item';
+        div.innerHTML = `
+            <button type="button" class="btn btn-danger" onclick="removeQAItem(this)">Hapus</button>
+            <div class="form-group"><label class="qa-label-q">Pertanyaan</label><input type="text" class="qa-q" value="${data.q}" required></div>
+            <div class="form-group"><label class="qa-label-a">Jawaban</label><textarea class="qa-a" required>${data.a}</textarea></div>
+        `;
+        container.appendChild(div);
+        updateQANumbers();
+    }
+
+    function removeQAItem(btn) {
+        btn.closest('.dynamic-item').remove();
+        updateQANumbers();
+    }
+
+    function previewImages(event) {
+        uploadedImages = [];
+        const files = event.target.files;
+        for (let i = 0; i < files.length; i++) {
+            const reader = new FileReader();
+            reader.onload = function(e) { uploadedImages.push(e.target.result); }
+            reader.readAsDataURL(files[i]);
+        }
+    }
+
+    // SIMPAN DATA KE FIREBASE CLOUD DATABASE
+    function saveAndPreviewBAP() {
+        const currentId = document.getElementById('bapId').value;
+        const bapId = currentId ? currentId : 'BAP_' + Date.now();
+
+        const formData = {
+            id: bapId,
+            customLogo: customLogoBase64 || null,
+            kanwil: document.getElementById('kanwil').value,
+            satker: document.getElementById('satker').value,
+            alamatSatker: document.getElementById('alamatSatker').value,
+            noBap: document.getElementById('noBap').value,
+            pemberiPerintah: document.getElementById('pemberiPerintah').value,
+            hariTanggal: document.getElementById('hariTanggal').value,
+            jam: document.getElementById('jam').value,
+            kota: document.getElementById('kota').value,
+            wbpNama: document.getElementById('wbpNama').value,
+            wbpReg: document.getElementById('wbpReg').value,
+            wbpPutusan: document.getElementById('wbpPutusan').value,
+            wbpPerkara: document.getElementById('wbpPerkara').value,
+            wbpEkspirasi: document.getElementById('wbpEkspirasi').value,
+            dugaanPelanggaran: document.getElementById('dugaanPelanggaran').value,
+            resumePoints: document.getElementById('resumePoints').value,
+            dasarAturan: document.getElementById('dasarAturan').value,
+            rekomendasiPoints: document.getElementById('rekomendasiPoints').value,
+            kalapasNama: document.getElementById('kalapasNama').value,
+            kasiKamtibNama: document.getElementById('kasiKamtibNama').value,
+            pemeriksa: [],
+            qa: [],
+            images: uploadedImages,
+            updatedAt: new Date().toISOString()
+        };
+
+        document.querySelectorAll('.pem-nama').forEach((el, i) => {
+            formData.pemeriksa.push({
+                nama: el.value,
+                nip: document.querySelectorAll('.pem-nip')[i].value,
+                pangkat: document.querySelectorAll('.pem-pangkat')[i].value,
+                jabatan: document.querySelectorAll('.pem-jabatan')[i].value
+            });
+        });
+
+        document.querySelectorAll('.qa-q').forEach((el, i) => {
+            formData.qa.push({
+                q: el.value,
+                a: document.querySelectorAll('.qa-a')[i].value
+            });
+        });
+
+        // Simpan langsung ke Firebase Realtime Database
+        database.ref('bap_records/' + bapId).set(formData, (error) => {
+            if (error) {
+                alert("Gagal menyimpan data ke Cloud: " + error.message);
+            } else {
+                renderPreview(formData);
+            }
+        });
+    }
+
+    function renderPreview(data) {
+        if (data.customLogo) {
+            document.querySelectorAll('.out-logo').forEach(img => img.src = data.customLogo);
+        }
+
+        document.querySelectorAll('.out-kanwil').forEach(el => el.innerText = data.kanwil);
+        document.querySelectorAll('.out-satker').forEach(el => el.innerText = data.satker);
+        document.querySelectorAll('.out-alamatSatker').forEach(el => el.innerText = data.alamatSatker);
+
+        document.getElementById('out-satker-text').innerText = data.satker;
+        document.getElementById('out-noBap').innerText = data.noBap;
+        document.getElementById('out-pemberiPerintah').innerText = data.pemberiPerintah;
+        document.getElementById('out-hariTanggal').innerText = data.hariTanggal;
+        document.getElementById('out-jam').innerText = data.jam;
+        document.getElementById('out-kota').innerText = data.kota;
+        
+        const dateParts = data.hariTanggal.split(',');
+        document.getElementById('out-tanggalOnly').innerText = dateParts.length > 1 ? dateParts[1].trim() : data.hariTanggal;
+
+        const pemList = document.getElementById('out-pemeriksa-list');
+        const pemSigTable = document.getElementById('out-pemeriksa-sig-table');
+        pemList.innerHTML = '';
+        pemSigTable.innerHTML = '';
+        let sigTr = document.createElement('tr');
+
+        data.pemeriksa.forEach(p => {
+            const pDiv = document.createElement('div');
+            pDiv.style.marginBottom = '5px';
+            pDiv.innerHTML = `
+                <table class="table-doc">
+                    <tr><td style="width: 18%;">N a m a</td><td style="width:3%;">:</td><td><b>${p.nama}</b></td></tr>
+                    <tr><td>NIP</td><td>:</td><td>${p.nip}</td></tr>
+                    <tr><td>Pangkat/Gol</td><td>:</td><td>${p.pangkat}</td></tr>
+                    <tr><td>Jabatan</td><td>:</td><td>${p.jabatan}</td></tr>
+                </table>
+            `;
+            pemList.appendChild(pDiv);
+
+            const td = document.createElement('td');
+            td.innerHTML = `<b>${p.jabatan.toUpperCase()}</b><div class="sig-space"></div><b>${p.nama}</b>`;
+            sigTr.appendChild(td);
+        });
+        pemSigTable.appendChild(sigTr);
+
+        document.getElementById('out-wbpNama').innerText = data.wbpNama;
+        document.getElementById('out-wbpReg').innerText = data.wbpReg;
+        document.getElementById('out-wbpPutusan').innerText = data.wbpPutusan;
+        document.getElementById('out-wbpPerkara').innerText = data.wbpPerkara;
+        document.getElementById('out-wbpEkspirasi').innerText = data.wbpEkspirasi;
+        document.getElementById('out-dugaanPelanggaran').innerText = data.dugaanPelanggaran;
+
+        document.getElementById('out-sig-wbp').innerText = data.wbpNama;
+        document.getElementById('out-resume-wbp').innerText = data.wbpNama;
+        document.getElementById('out-resume-wbp2').innerText = data.wbpNama;
+        document.getElementById('out-resume-wbp3').innerText = data.wbpNama;
+        document.getElementById('out-resume-pelanggaran').innerText = data.dugaanPelanggaran;
+
+        const qaTbody = document.getElementById('out-qa-tbody');
+        qaTbody.innerHTML = '';
+        data.qa.forEach((qa, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td style="text-align: center;">${i + 1}</td><td>${qa.q}</td><td>${qa.a}</td>`;
+            qaTbody.appendChild(tr);
+        });
+
+        const resumeOl = document.getElementById('out-resume-ol');
+        resumeOl.innerHTML = '';
+        data.resumePoints.split('\n').forEach(line => {
+            if (line.trim()) {
+                const li = document.createElement('li');
+                li.innerText = line.trim();
+                resumeOl.appendChild(li);
+            }
+        });
+
+        document.getElementById('out-dasarAturan').innerText = data.dasarAturan;
+
+        const rekomendasiOl = document.getElementById('out-rekomendasi-ol');
+        rekomendasiOl.innerHTML = '';
+        data.rekomendasiPoints.split('\n').forEach(line => {
+            if (line.trim()) {
+                const li = document.createElement('li');
+                li.innerText = line.trim();
+                rekomendasiOl.appendChild(li);
+            }
+        });
+
+        document.getElementById('out-sig-kalapas').innerText = data.kalapasNama;
+        document.getElementById('out-sig-kasiKamtib').innerText = data.kasiKamtibNama;
+
+        const imgContainer = document.getElementById('out-img-container');
+        imgContainer.innerHTML = '';
+        if (data.images && data.images.length > 0) {
+            data.images.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                imgContainer.appendChild(img);
+            });
+        }
+
+        document.getElementById('form-section').style.display = 'none';
+        document.getElementById('archive-section').style.display = 'none';
+        document.getElementById('bap-preview').style.display = 'block';
+        window.scrollTo(0, 0);
+    }
+
+    function renderArchiveTable() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const tbody = document.getElementById('archiveTbody');
+        tbody.innerHTML = '';
+
+        const filtered = globalBapArray.filter(item => 
+            (item.wbpNama && item.wbpNama.toLowerCase().includes(search)) ||
+            (item.wbpReg && item.wbpReg.toLowerCase().includes(search)) ||
+            (item.noBap && item.noBap.toLowerCase().includes(search))
+        );
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding: 20px;">Belum ada data arsip BAP di Cloud.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td><b>${item.wbpNama}</b><br><small style="color:#64748b;">No. Reg: ${item.wbpReg}</small></td>
+                <td>${item.noBap}<br><small style="color:#64748b;">${item.hariTanggal}</small></td>
+                <td>${item.dugaanPelanggaran ? item.dugaanPelanggaran.substring(0, 50) : ''}...</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-success" style="padding: 4px 8px; font-size: 11px;" onclick="viewBap('${item.id}')">Pratinjau</button>
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="loadBapToForm('${item.id}')">Edit</button>
+                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteBap('${item.id}')">Hapus</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function viewBap(id) {
+        const item = globalBapArray.find(i => i.id === id);
+        if (item) renderPreview(item);
+    }
+
+    function loadBapToForm(id) {
+        const item = globalBapArray.find(i => i.id === id);
+        if (!item) return;
+
+        document.getElementById('bapId').value = item.id;
+        document.getElementById('kanwil').value = item.kanwil || '';
+        document.getElementById('satker').value = item.satker || '';
+        document.getElementById('alamatSatker').value = item.alamatSatker || '';
+        document.getElementById('noBap').value = item.noBap || '';
+        document.getElementById('pemberiPerintah').value = item.pemberiPerintah || '';
+        document.getElementById('hariTanggal').value = item.hariTanggal || '';
+        document.getElementById('jam').value = item.jam || '';
+        document.getElementById('kota').value = item.kota || '';
+        document.getElementById('wbpNama').value = item.wbpNama || '';
+        document.getElementById('wbpReg').value = item.wbpReg || '';
+        document.getElementById('wbpPutusan').value = item.wbpPutusan || '';
+        document.getElementById('wbpPerkara').value = item.wbpPerkara || '';
+        document.getElementById('wbpEkspirasi').value = item.wbpEkspirasi || '';
+        document.getElementById('dugaanPelanggaran').value = item.dugaanPelanggaran || '';
+        document.getElementById('resumePoints').value = item.resumePoints || '';
+        document.getElementById('dasarAturan').value = item.dasarAturan || '';
+        document.getElementById('rekomendasiPoints').value = item.rekomendasiPoints || '';
+        document.getElementById('kalapasNama').value = item.kalapasNama || '';
+        document.getElementById('kasiKamtibNama').value = item.kasiKamtibNama || '';
+
+        if (item.customLogo) customLogoBase64 = item.customLogo;
+
+        document.getElementById('pemeriksa-container').innerHTML = '';
+        if (item.pemeriksa && item.pemeriksa.length > 0) {
+            item.pemeriksa.forEach(p => addPemeriksa(p));
+        }
+
+        document.getElementById('qa-container').innerHTML = '';
+        if (item.qa && item.qa.length > 0) {
+            item.qa.forEach(q => addQA(q));
+        }
+
+        uploadedImages = item.images || [];
+
+        document.getElementById('form-title').innerText = 'EDIT DOKUMEN BAP: ' + item.wbpNama;
+        switchTab('form');
+    }
+
+    function deleteBap(id) {
+        if (confirm('Apakah Anda yakin ingin menghapus BAP ini dari Cloud Database?')) {
+            database.ref('bap_records/' + id).remove();
+        }
+    }
+
+    function resetForm() {
+        if (confirm("Apakah Anda yakin ingin mengosongkan formulir ini?")) {
+            document.getElementById('bapForm').reset();
+            document.getElementById('bapId').value = '';
+            document.getElementById('pemeriksa-container').innerHTML = '';
+            document.getElementById('qa-container').innerHTML = '';
+            uploadedImages = [];
+            customLogoBase64 = null;
+            initialPemeriksa.forEach(p => addPemeriksa(p));
+            initialQA.forEach(qa => addQA(qa));
+            document.getElementById('form-title').innerText = 'FORMULIR INPUT BAP PEMASYARAKATAN';
+        }
+    }
+
+    function resetDatabase() {
+        if (confirm("PERINGATAN PERMANEN: Ini akan menghapus SELURUH data BAP di Cloud Database! Lanjutkan?")) {
+            database.ref('bap_records').remove();
+        }
+    }
+
+    function backToEdit() {
+        document.getElementById('form-section').style.display = 'block';
+        document.getElementById('bap-preview').style.display = 'none';
+    }
+
+    function exportToWord() {
+        const wbpNama = document.getElementById('out-wbpNama').innerText || 'WBP';
+        const fileName = `BAP_${wbpNama.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+        const content = document.getElementById('bap-doc-content').innerHTML;
+        
+        const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>BAP</title><style>@page { size: 215mm 330mm; margin-top: 1.5cm; margin-left: 2.5cm; margin-right: 2.5cm; margin-bottom: 2.7cm; } body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.35; } .kop-surat-wrapper { display: table; width: 100%; border-bottom: 3px double #000; padding-bottom: 6px; margin-bottom: 15px; } .kop-logo { display: table-cell; width: 80px; vertical-align: middle; } .kop-text { display: table-cell; text-align: center; vertical-align: middle; } .kop-text h4 { margin: 0; font-size: 10.5pt; font-weight: bold; text-transform: uppercase; } .kop-text h3 { margin: 0; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; } .kop-text p { margin: 2px 0 0 0; font-size: 9.5pt; font-style: italic; } .doc-title { text-align: center; margin-bottom: 15px; } .doc-title h3 { margin: 0; font-size: 12pt; font-weight: bold; text-decoration: underline; } table { width: 100%; border-collapse: collapse; } td, th { vertical-align: top; padding: 4px; font-size: 11pt; } .table-qa th, .table-qa td { border: 1px solid #000; } .table-qa th { background-color: #f2f2f2; text-align: center; font-weight: bold; } .sig-table { width: 100%; text-align: center; margin-top: 15px; font-size: 11pt; } .sig-space { height: 50px; } .resume-title { text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 8px; } .page-break { page-break-before: always; mso-break-type: page-break; } </style></head><body>`;
+        const footer = "</body></html>";
+        const html = header + content + footer;
+
+        const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function exportDataJSON() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(globalBapArray));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `BACKUP_BAP_CLOUD_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function importDataJSON(event) {
+        const fileReader = new FileReader();
+        fileReader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (Array.isArray(importedData)) {
+                    importedData.forEach(item => {
+                        if(item.id) database.ref('bap_records/' + item.id).set(item);
+                    });
+                    alert('Berhasil mengunggah ' + importedData.length + ' data ke Cloud.');
+                }
+            } catch (err) {
+                alert('Format file JSON tidak valid.');
+            }
+        };
+        fileReader.readAsText(event.target.files[0]);
+    }
+
+    window.onload = function() {
+        checkLoginStatus();
+        initialPemeriksa.forEach(p => addPemeriksa(p));
+        initialQA.forEach(qa => addQA(qa));
+        listenToCloudData();
+    };
+</script>
+
+</body>
+</html>
